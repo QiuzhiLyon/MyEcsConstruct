@@ -23,6 +23,12 @@ export class MyEcsConstructStack extends cdk.Stack {
       vpc: vpc
     });
 
+    const initTaskSG = new ec2.SecurityGroup(this, 'InitTaskSG', {
+      vpc,
+      description: 'Security group for init ECS task',
+      allowAllOutbound: true // default is true
+    });
+
     const db = new rds.DatabaseInstance(this, 'OnlineShoppingDB', {
       engine: rds.DatabaseInstanceEngine.mysql({ version: rds.MysqlEngineVersion.VER_8_0_32 }),
       instanceType: ec2.InstanceType.of(ec2.InstanceClass.T3, ec2.InstanceSize.MICRO),
@@ -32,8 +38,9 @@ export class MyEcsConstructStack extends cdk.Stack {
       databaseName: 'online_shopping',
       publiclyAccessible: true,
       vpcSubnets: { subnetType: ec2.SubnetType.PUBLIC },
-
     });
+
+    db.connections.allowFromAnyIpv4(ec2.Port.tcp(3306), 'Allow public MySQL access');
 
     const initTaskDef = new ecs.FargateTaskDefinition(this, 'InitTaskDef', {
       memoryLimitMiB: 512,
@@ -60,7 +67,7 @@ export class MyEcsConstructStack extends cdk.Stack {
       taskDefinition: initTaskDef,
       launchTarget: new tasks.EcsFargateLaunchTarget(),
       assignPublicIp: true, // or false depending on your networking setup
-      securityGroups: [ec2.SecurityGroup.fromSecurityGroupId(this, 'SG', vpc.vpcDefaultSecurityGroup)],
+      securityGroups: [initTaskSG],
       subnets: { subnetType: ec2.SubnetType.PUBLIC },
     });
 
@@ -105,18 +112,24 @@ export class MyEcsConstructStack extends cdk.Stack {
       publicLoadBalancer: true // Default is true
     });
 
-    // Step 4: Ensure app runs after init
+    // After defining the fargateService
+    const scalableTarget = fargateService.service.autoScaleTaskCount({
+      minCapacity: 3,
+      maxCapacity: 6,
+    });
+
+// Scale based on average CPU utilization
+    scalableTarget.scaleOnCpuUtilization('CpuScaling', {
+      targetUtilizationPercent: 60, // Target CPU usage
+      scaleInCooldown: cdk.Duration.seconds(60),
+      scaleOutCooldown: cdk.Duration.seconds(60),
+    });
+
+    // Step 4: Ensure app runs RDS → Init SQL task → App FargateService.
+    startExecution.node.addDependency(db);
     fargateService.node.addDependency(startExecution);
 
-    db.connections.allowFromAnyIpv4(ec2.Port.tcp(3306), 'Allow public MySQL access');
-
-    // 5. Allow ECS to connect to RDS
-    db.connections.allowFrom(
-        fargateService.service.connections,
-        ec2.Port.tcp(3306)
-    );
-
-    // 6. Output the RDS endpoint and LB URL
+    // 5. Output the RDS endpoint and LB URL
     new cdk.CfnOutput(this, 'RDSEndpoint', {
       value: db.dbInstanceEndpointAddress,
     });
