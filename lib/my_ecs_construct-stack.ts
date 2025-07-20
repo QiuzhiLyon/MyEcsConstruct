@@ -7,6 +7,7 @@ import * as ecs_patterns from "aws-cdk-lib/aws-ecs-patterns";
 import * as tasks from 'aws-cdk-lib/aws-stepfunctions-tasks';
 import * as stepfunctions from 'aws-cdk-lib/aws-stepfunctions';
 import * as custom from 'aws-cdk-lib/custom-resources';
+import * as dynamodb from 'aws-cdk-lib/aws-dynamodb';
 
 import * as ecr from "aws-cdk-lib/aws-ecr-assets";
 import * as path from 'path';
@@ -98,7 +99,7 @@ export class MyEcsConstructStack extends cdk.Stack {
       desiredCount: 3, // Default is 1
       taskImageOptions: {
         image: ecs.ContainerImage.fromAsset(
-            '/Users/Peng/Workspace/OnlineShopping_06',
+            '/Users/Peng/Workspace/OnlineShopping_07',
             {
               platform: ecr.Platform.LINUX_AMD64
             }

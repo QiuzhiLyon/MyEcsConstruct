@@ -1,10 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project version="4">
   <component name="VcsDirectoryMappings">
-    <mapping directory="$PROJECT_DIR$/cdk.out/asset.3f3b58ccd36e3b0738e7a9f84a4eabdbacf2c0d0c419320fb66b8b66d1be70ed" vcs="Git" />
-    <mapping directory="$PROJECT_DIR$/cdk.out/asset.5215ba78d7840f64cfa964bc114d2dc2342f7a063428129956b660c563b36a14" vcs="Git" />
-    <mapping directory="$PROJECT_DIR$/cdk.out/asset.7887aeb9a6215798806174342ca69508f1fee82d273e504deb0f0d9b24d97a23" vcs="Git" />
-    <mapping directory="$PROJECT_DIR$/cdk.out/asset.b1ef566dc0cb3b1b028411eaa14f27157de75c43687bca68974420ff79f3fcf4" vcs="Git" />
-    <mapping directory="$PROJECT_DIR$/cdk.out/asset.c9041ed43dc3dee46068536c5d6507267e8a926a3ae09214d7fcea1e4de8369b" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$" vcs="Git" />
   </component>
 </project>
