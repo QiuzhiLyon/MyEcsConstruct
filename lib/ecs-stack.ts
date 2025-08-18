@@ -11,10 +11,19 @@ import * as dynamodb from 'aws-cdk-lib/aws-dynamodb';
 
 import * as ecr from "aws-cdk-lib/aws-ecr-assets";
 import * as path from 'path';
+import { IRepository } from 'aws-cdk-lib/aws-ecr';
+import {DockerImageAsset} from "aws-cdk-lib/aws-ecr-assets";
 
-export class MyEcsConstructStack extends cdk.Stack {
-  constructor(scope: Construct, id: string, props?: cdk.StackProps) {
+interface MyEcsConstructStackProps extends cdk.StackProps {
+  ecrRepo: IRepository; // <-- Add this
+}
+
+export class EcsStack extends cdk.Stack {
+  public readonly fargateService: ecs_patterns.ApplicationLoadBalancedFargateService;
+
+  constructor(scope: Construct, id: string, props: MyEcsConstructStackProps) {
     super(scope, id, props);
+    const { ecrRepo } = props; // <-- get the repo
 
     const vpc = new ec2.Vpc(this, "MyVpc", {
       maxAzs: 3 // Default is all AZs in region
@@ -31,7 +40,7 @@ export class MyEcsConstructStack extends cdk.Stack {
     });
 
     const db = new rds.DatabaseInstance(this, 'OnlineShoppingDB', {
-      engine: rds.DatabaseInstanceEngine.mysql({ version: rds.MysqlEngineVersion.VER_8_0_32 }),
+      engine: rds.DatabaseInstanceEngine.mysql({ version: rds.MysqlEngineVersion.VER_8_0_42 }),
       instanceType: ec2.InstanceType.of(ec2.InstanceClass.T3, ec2.InstanceSize.MICRO),
       vpc,
       credentials: rds.Credentials.fromPassword('rootroot', cdk.SecretValue.unsafePlainText('rootroot')),
@@ -93,11 +102,12 @@ export class MyEcsConstructStack extends cdk.Stack {
     });
 
     // Create a load-balanced Fargate service and make it public
-    const fargateService = new ecs_patterns.ApplicationLoadBalancedFargateService(this, "MyFargateService", {
+    this.fargateService  = new ecs_patterns.ApplicationLoadBalancedFargateService(this, "MyFargateService", {
       cluster: cluster, // Required
       cpu: 256, // Default is 256
       desiredCount: 3, // Default is 1
       taskImageOptions: {
+        containerName: "onlineshopping",
         image: ecs.ContainerImage.fromAsset(
             '/Users/Peng/Workspace/OnlineShopping_07',
             {
@@ -114,7 +124,7 @@ export class MyEcsConstructStack extends cdk.Stack {
     });
 
     // After defining the fargateService
-    const scalableTarget = fargateService.service.autoScaleTaskCount({
+    const scalableTarget = this.fargateService.service.autoScaleTaskCount({
       minCapacity: 3,
       maxCapacity: 6,
     });
@@ -128,7 +138,7 @@ export class MyEcsConstructStack extends cdk.Stack {
 
     // Step 4: Ensure app runs RDS → Init SQL task → App FargateService.
     startExecution.node.addDependency(db);
-    fargateService.node.addDependency(startExecution);
+    this.fargateService.node.addDependency(startExecution);
 
     // 5. Output the RDS endpoint and LB URL
     new cdk.CfnOutput(this, 'RDSEndpoint', {
@@ -136,7 +146,7 @@ export class MyEcsConstructStack extends cdk.Stack {
     });
 
     new cdk.CfnOutput(this, 'LoadBalancerURL', {
-      value: fargateService.loadBalancer.loadBalancerDnsName,
+      value: this.fargateService.loadBalancer.loadBalancerDnsName,
     });
   }
 }
