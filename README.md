@@ -24,3 +24,24 @@ http://myecsc-myfar-kooyzjewb1im-741086476.us-east-1.elb.amazonaws.com/
 
 
 npm install @aws-cdk/aws-ecs @aws-cdk/aws-ec2 @aws-cdk/aws-rds @aws-cdk/aws-secretsmanager @aws-cdk/aws-lambda @aws-cdk/aws-iam @aws-cdk/aws-logs
+
+## Github Token
+https://github.com/settings/tokens/
+https://github.com/settings/tokens/2320163786
+
+GitHub (commit)
+│
+▼
+CodePipeline ──► Source Stage
+│
+▼
+CodePipeline ──► Build Stage (CodeBuild)
+│       - docker build from source
+│       - tag & push to ECR
+│       - generate imagedefinitions.json
+▼
+CodePipeline ──► Deploy Stage (EcsDeployAction)
+│       - read imagedefinitions.json
+│       - update ECS task definition
+▼
+ECS Service ──► Running Tasks pull new image from ECR

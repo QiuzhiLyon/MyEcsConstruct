@@ -4,7 +4,6 @@ import {Repository} from 'aws-cdk-lib/aws-ecr';
 import {BuildSpec, LinuxBuildImage, PipelineProject} from 'aws-cdk-lib/aws-codebuild';
 import {Artifact, Pipeline} from "aws-cdk-lib/aws-codepipeline";
 import {CodeBuildAction, EcsDeployAction, GitHubSourceAction} from "aws-cdk-lib/aws-codepipeline-actions";
-import {IBaseService} from "aws-cdk-lib/aws-ecs";
 import {ApplicationLoadBalancedFargateService} from "aws-cdk-lib/aws-ecs-patterns";
 
 export interface CicdStackProps extends cdk.StackProps {
@@ -21,12 +20,18 @@ export class CICDPipeline extends cdk.Stack {
     // Build project
     const buildProject = new PipelineProject(this, 'MyAppBuildProject', {
       environment: {
-        buildImage: LinuxBuildImage.AMAZON_LINUX_2_5,
+        buildImage: LinuxBuildImage.STANDARD_7_0, // includes Java and Maven
         privileged: true
       },
       buildSpec: BuildSpec.fromObject({
         version: '0.2',
         phases: {
+          install: {
+            commands: [
+              'echo Installing Maven dependencies...',
+              'mvn --version' // just to verify Maven is available
+            ]
+          },
           pre_build: {
             commands: [
               'echo Logging in to Amazon ECR...',
@@ -37,6 +42,8 @@ export class CICDPipeline extends cdk.Stack {
           },
           build: {
             commands: [
+              'echo Building the Java project...',
+              'mvn clean package -DskipTests', // generate target/*.jar
               'echo Building the Docker image...',
               `docker build -t ${props.ecrRepo.repositoryUri}:$IMAGE_TAG .`,
               `docker tag ${props.ecrRepo.repositoryUri}:$IMAGE_TAG ${props.ecrRepo.repositoryUri}:latest`,
@@ -77,7 +84,7 @@ export class CICDPipeline extends cdk.Stack {
           repo: 'OnlineShopping_07',
           oauthToken: cdk.SecretValue.secretsManager('github-token'),
           output: sourceOutput,
-          branch: 'main'
+          branch: 'ec2'
         })
       ]
     });

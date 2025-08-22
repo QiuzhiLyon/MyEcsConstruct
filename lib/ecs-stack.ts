@@ -136,6 +136,9 @@ export class EcsStack extends cdk.Stack {
       scaleOutCooldown: cdk.Duration.seconds(60),
     });
 
+    // Grant ECS task role permission to pull images from ECR
+    props.ecrRepo.grantPull(this.fargateService.taskDefinition.taskRole);
+
     // Step 4: Ensure app runs RDS → Init SQL task → App FargateService.
     startExecution.node.addDependency(db);
     this.fargateService.node.addDependency(startExecution);
