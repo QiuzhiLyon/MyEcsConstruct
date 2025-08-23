@@ -29,6 +29,16 @@ npm install @aws-cdk/aws-ecs @aws-cdk/aws-ec2 @aws-cdk/aws-rds @aws-cdk/aws-secr
 https://github.com/settings/tokens/
 https://github.com/settings/tokens/2320163786
 
+### Deployment:
+First deploy (bootstrap):
+
+cdk deploy -c usePipelineImage=false
+
+After pipeline succeeds:
+
+cdk deploy -c usePipelineImage=true
+
+## Workflow
 GitHub (commit)
 │
 ▼

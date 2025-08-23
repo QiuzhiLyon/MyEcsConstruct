@@ -23,7 +23,6 @@ export class EcsStack extends cdk.Stack {
 
   constructor(scope: Construct, id: string, props: MyEcsConstructStackProps) {
     super(scope, id, props);
-    const { ecrRepo } = props; // <-- get the repo
 
     const vpc = new ec2.Vpc(this, "MyVpc", {
       maxAzs: 3 // Default is all AZs in region
@@ -41,7 +40,7 @@ export class EcsStack extends cdk.Stack {
 
     const db = new rds.DatabaseInstance(this, 'OnlineShoppingDB', {
       engine: rds.DatabaseInstanceEngine.mysql({ version: rds.MysqlEngineVersion.VER_8_0_42 }),
-      instanceType: ec2.InstanceType.of(ec2.InstanceClass.T3, ec2.InstanceSize.MICRO),
+      instanceType: ec2.InstanceType.of(ec2.InstanceClass.T3, ec2.InstanceSize.SMALL),
       vpc,
       credentials: rds.Credentials.fromPassword('rootroot', cdk.SecretValue.unsafePlainText('rootroot')),
       allocatedStorage: 20,
@@ -101,6 +100,14 @@ export class EcsStack extends cdk.Stack {
       }),
     });
 
+    const usePipelineImage = this.node.tryGetContext('usePipelineImage') === 'true';
+
+    const image = usePipelineImage
+        ? ecs.ContainerImage.fromEcrRepository(props.ecrRepo, "latest")
+        : ecs.ContainerImage.fromRegistry("amazon/amazon-ecs-sample");
+
+    const containerPort = usePipelineImage ? 8070 : 80;
+
     // Create a load-balanced Fargate service and make it public
     this.fargateService  = new ecs_patterns.ApplicationLoadBalancedFargateService(this, "MyFargateService", {
       cluster: cluster, // Required
@@ -108,13 +115,8 @@ export class EcsStack extends cdk.Stack {
       desiredCount: 3, // Default is 1
       taskImageOptions: {
         containerName: "onlineshopping",
-        image: ecs.ContainerImage.fromAsset(
-            '/Users/Peng/Workspace/OnlineShopping_07',
-            {
-              platform: ecr.Platform.LINUX_AMD64
-            }
-        ),
-        containerPort: 8070,
+        image: image,
+        containerPort: containerPort,
         environment: {
           DB_HOST: db.dbInstanceEndpointAddress
         },
