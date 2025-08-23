@@ -111,8 +111,8 @@ export class EcsStack extends cdk.Stack {
     // Create a load-balanced Fargate service and make it public
     this.fargateService  = new ecs_patterns.ApplicationLoadBalancedFargateService(this, "MyFargateService", {
       cluster: cluster, // Required
-      cpu: 256, // Default is 256
-      desiredCount: 3, // Default is 1
+      cpu: 512, // Default is 256
+      desiredCount: 1, // Default is 1
       taskImageOptions: {
         containerName: "onlineshopping",
         image: image,
@@ -121,14 +121,14 @@ export class EcsStack extends cdk.Stack {
           DB_HOST: db.dbInstanceEndpointAddress
         },
       },
-      memoryLimitMiB: 512, // Default is 512
+      memoryLimitMiB: 1024, // Default is 512
       publicLoadBalancer: true // Default is true
     });
 
     // After defining the fargateService
     const scalableTarget = this.fargateService.service.autoScaleTaskCount({
-      minCapacity: 3,
-      maxCapacity: 6,
+      minCapacity: 1,
+      maxCapacity: 2,
     });
 
 // Scale based on average CPU utilization

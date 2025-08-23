@@ -32,11 +32,11 @@ https://github.com/settings/tokens/2320163786
 ### Deployment:
 First deploy (bootstrap):
 
-cdk deploy -c usePipelineImage=false
+cdk deploy EcsStack -c usePipelineImage=false
 
 After pipeline succeeds:
 
-cdk deploy -c usePipelineImage=true
+cdk deploy EcsStack -c usePipelineImage=true
 
 ## Workflow
 GitHub (commit)
